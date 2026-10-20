@@ -1,0 +1,416 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Elegante</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            accent: '#6366f1',
+                            accentHover: '#4f46e5',
+                        }
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                        'glass-light': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Efeito de Glassmorphism */
+        .glass-panel {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        /* Ocultar barra de rolagem mas manter navegação */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Animação de clique nos botões */
+        .btn-active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 text-slate-100 min-h-screen flex items-center justify-center p-3 sm:p-6 transition-colors duration-500">
+
+    <!-- Container Principal da Calculadora -->
+    <div class="relative w-full max-w-md bg-white/10 dark:bg-slate-900/40 border border-white/20 dark:border-white/10 rounded-3xl shadow-glass dark:shadow-2xl overflow-hidden glass-panel flex flex-col transition-all duration-300">
+        
+        <!-- Cabeçalho (Controles de Tema e Histórico) -->
+        <div class="flex justify-between items-center px-6 pt-5 pb-2 border-b border-white/10 text-slate-700 dark:text-slate-300">
+            <span class="text-xs uppercase tracking-widest font-semibold text-slate-400 dark:text-slate-400">Calculadora</span>
+            <div class="flex items-center gap-3">
+                <!-- Alternar Histórico -->
+                <button id="toggleHistoryBtn" title="Histórico" class="p-2 rounded-full hover:bg-white/10 dark:hover:bg-white/5 transition-all text-slate-300 hover:text-white">
+                    <i data-lucide="history" class="w-5 h-5"></i>
+                </button>
+                <!-- Alternar Tema -->
+                <button id="toggleThemeBtn" title="Alternar Tema" class="p-2 rounded-full hover:bg-white/10 dark:hover:bg-white/5 transition-all text-slate-300 hover:text-white">
+                    <i id="themeIcon" data-lucide="sun" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tela do Display da Calculadora -->
+        <div class="p-6 flex flex-col justify-end items-end min-h-[140px] text-right break-all">
+            <!-- Expressão Anterior -->
+            <div id="previousExpression" class="text-slate-400 dark:text-slate-400 text-sm sm:text-base h-6 font-medium tracking-wide overflow-hidden w-full text-right truncate"></div>
+            <!-- Entrada Atual -->
+            <div id="currentDisplay" class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mt-1 w-full overflow-x-auto no-scrollbar scroll-smooth">0</div>
+        </div>
+
+        <!-- Painel de Histórico Expandível (Aparece ao clicar no ícone do histórico) -->
+        <div id="historyPanel" class="hidden absolute inset-0 z-20 bg-slate-900/95 backdrop-blur-xl flex flex-col p-6 transition-all duration-300">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-700">
+                <h3 class="text-lg font-bold flex items-center gap-2 text-white">
+                    <i data-lucide="history" class="w-5 h-5 text-indigo-400"></i> Histórico
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button id="clearHistoryBtn" title="Limpar Histórico" class="p-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-all">
+                        Limpar
+                    </button>
+                    <button id="closeHistoryBtn" class="p-1 text-slate-400 hover:text-white rounded-lg">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Lista do Histórico -->
+            <div id="historyList" class="flex-1 overflow-y-auto my-4 space-y-3 pr-1 text-right text-sm">
+                <div class="text-center text-slate-500 my-auto pt-10">Nenhum histórico disponível</div>
+            </div>
+        </div>
+
+        <!-- Teclado de Botões da Calculadora -->
+        <div class="grid grid-cols-4 gap-2.5 sm:gap-3 p-5 sm:p-6 bg-slate-950/20 dark:bg-black/30 border-t border-white/10">
+            
+            <!-- Linha 1 -->
+            <button data-action="clear" class="btn bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-lg">AC</button>
+            <button data-action="toggle-sign" class="btn bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 font-semibold p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-lg">+/-</button>
+            <button data-action="percent" class="btn bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 font-semibold p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-lg">%</button>
+            <button data-operator="/" class="btn bg-indigo-600/60 hover:bg-indigo-600/80 text-white font-bold p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-indigo-400/30">÷</button>
+
+            <!-- Linha 2 -->
+            <button data-number="7" class="btn bg-white/5 hover:bg-white/15 text-white font-medium p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-white/5">7</button>
+            <button data-number="8" class="btn bg-white/5 hover:bg-white/15 text-white font-medium p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-white/5">8</button>
+            <button data-number="9" class="btn bg-white/5 hover:bg-white/15 text-white font-medium p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-white/5">9</button>
+            <button data-operator="*" class="btn bg-indigo-600/60 hover:bg-indigo-600/80 text-white font-bold p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-indigo-400/30">×</button>
+
+            <!-- Linha 3 -->
+            <button data-number="4" class="btn bg-white/5 hover:bg-white/15 text-white font-medium p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-white/5">4</button>
+            <button data-number="5" class="btn bg-white/5 hover:bg-white/15 text-white font-medium p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-white/5">5</button>
+            <button data-number="6" class="btn bg-white/5 hover:bg-white/15 text-white font-medium p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-white/5">6</button>
+            <button data-operator="-" class="btn bg-indigo-600/60 hover:bg-indigo-600/80 text-white font-bold p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-indigo-400/30">−</button>
+
+            <!-- Linha 4 -->
+            <button data-number="1" class="btn bg-white/5 hover:bg-white/15 text-white font-medium p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-white/5">1</button>
+            <button data-number="2" class="btn bg-white/5 hover:bg-white/15 text-white font-medium p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-white/5">2</button>
+            <button data-number="3" class="btn bg-white/5 hover:bg-white/15 text-white font-medium p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-white/5">3</button>
+            <button data-operator="+" class="btn bg-indigo-600/60 hover:bg-indigo-600/80 text-white font-bold p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-indigo-400/30">+</button>
+
+            <!-- Linha 5 -->
+            <button data-number="0" class="btn bg-white/5 hover:bg-white/15 text-white font-medium p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-white/5">0</button>
+            <button data-action="decimal" class="btn bg-white/5 hover:bg-white/15 text-white font-medium p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl border border-white/5">,</button>
+            <button data-action="backspace" class="btn bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 font-semibold p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-lg flex items-center justify-center">
+                <i data-lucide="delete" class="w-5 h-5"></i>
+            </button>
+            <button data-action="calculate" class="btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold p-4 sm:p-5 rounded-2xl transition-all active:scale-95 text-xl shadow-lg shadow-indigo-500/30 border border-indigo-400/50">=</button>
+        </div>
+    </div>
+
+    <!-- Script de Lógica da Calculadora -->
+    <script>
+        // Inicialização dos ícones Lucide
+        lucide.createIcons();
+
+        // Estado da Calculadora
+        let currentInput = '0';
+        let previousInput = '';
+        let operator = null;
+        let shouldResetDisplay = false;
+        let history = [];
+
+        // Elementos DOM
+        const currentDisplay = document.getElementById('currentDisplay');
+        const previousExpression = document.getElementById('previousExpression');
+        const historyPanel = document.getElementById('historyPanel');
+        const historyList = document.getElementById('historyList');
+        const toggleHistoryBtn = document.getElementById('toggleHistoryBtn');
+        const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const toggleThemeBtn = document.getElementById('toggleThemeBtn');
+        const themeIcon = document.getElementById('themeIcon');
+
+        // Modos de Tema (Dark/Light)
+        let isDarkMode = true;
+        toggleThemeBtn.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            document.documentElement.classList.toggle('dark', isDarkMode);
+            
+            if (isDarkMode) {
+                document.body.className = "bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-3 sm:p-6 transition-colors duration-500";
+                themeIcon.setAttribute('data-lucide', 'sun');
+            } else {
+                document.body.className = "bg-gradient-to-br from-slate-100 via-indigo-100 to-slate-200 text-slate-800 min-h-screen flex items-center justify-center p-3 sm:p-6 transition-colors duration-500";
+                themeIcon.setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+        });
+
+        // Atualiza a tela
+        function updateDisplay() {
+            // Formatar número para apresentação adequada com separadores de milhar
+            currentDisplay.textContent = formatNumber(currentInput);
+            
+            if (operator) {
+                const opSymbol = getOperatorSymbol(operator);
+                previousExpression.textContent = `${formatNumber(previousInput)} ${opSymbol}`;
+            } else {
+                previousExpression.textContent = '';
+            }
+
+            // Scroll automático para a direita ao digitar números longos
+            currentDisplay.scrollLeft = currentDisplay.scrollWidth;
+        }
+
+        // Formata os números
+        function formatNumber(numStr) {
+            if (numStr === '' || numStr === 'Erro') return numStr;
+            
+            const parts = numStr.split('.');
+            let integerPart = parts[0];
+            const decimalPart = parts.length > 1 ? ',' + parts[1] : '';
+
+            // Formata inteiros com separador de milhar pt-BR (ponto)
+            integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            return integerPart + decimalPart;
+        }
+
+        function getOperatorSymbol(op) {
+            switch(op) {
+                case '+': return '+';
+                case '-': return '−';
+                case '*': return '×';
+                case '/': return '÷';
+                default: return '';
+            }
+        }
+
+        // Manipulação de Entrada de Números
+        function appendNumber(number) {
+            if (currentInput === '0' || shouldResetDisplay) {
+                currentInput = number;
+                shouldResetDisplay = false;
+            } else {
+                // Limite de dígitos para evitar estouro visual
+                if (currentInput.replace('.', '').length < 12) {
+                    currentInput += number;
+                }
+            }
+            updateDisplay();
+        }
+
+        // Entrada de Ponto Decimal
+        function appendDecimal() {
+            if (shouldResetDisplay) {
+                currentInput = '0.';
+                shouldResetDisplay = false;
+            } else if (!currentInput.includes('.')) {
+                currentInput += '.';
+            }
+            updateDisplay();
+        }
+
+        // Seleção de Operador
+        function chooseOperator(op) {
+            if (currentInput === 'Erro') return;
+
+            if (operator !== null && !shouldResetDisplay) {
+                calculateResult();
+            }
+
+            previousInput = currentInput;
+            operator = op;
+            shouldResetDisplay = true;
+            updateDisplay();
+        }
+
+        // Executar Cálculo
+        function calculateResult() {
+            if (operator === null || shouldResetDisplay) return;
+
+            const prev = parseFloat(previousInput);
+            const current = parseFloat(currentInput);
+
+            if (isNaN(prev) || isNaN(current)) return;
+
+            let result = 0;
+            switch (operator) {
+                case '+':
+                    result = prev + current;
+                    break;
+                case '-':
+                    result = prev - current;
+                    break;
+                case '*':
+                    result = prev * current;
+                    break;
+                case '/':
+                    if (current === 0) {
+                        currentInput = 'Erro';
+                        operator = null;
+                        previousInput = '';
+                        updateDisplay();
+                        return;
+                    }
+                    result = prev / current;
+                    break;
+            }
+
+            // Tratamento de precisão de números flutuantes em JS
+            result = Math.round(result * 1e10) / 1e10;
+
+            const expressionString = `${formatNumber(previousInput)} ${getOperatorSymbol(operator)} ${formatNumber(currentInput)}`;
+            const resultString = result.toString();
+
+            // Adiciona ao histórico
+            addHistoryItem(expressionString, formatNumber(resultString));
+
+            currentInput = resultString;
+            operator = null;
+            previousInput = '';
+            shouldResetDisplay = true;
+            updateDisplay();
+        }
+
+        // Operação de Porcentagem
+        function handlePercent() {
+            if (currentInput === 'Erro') return;
+            const current = parseFloat(currentInput);
+            if (isNaN(current)) return;
+
+            if (previousInput && operator) {
+                // Se houver operação anterior, calcula x% do número anterior
+                const prev = parseFloat(previousInput);
+                currentInput = ((prev * current) / 100).toString();
+            } else {
+                currentInput = (current / 100).toString();
+            }
+            updateDisplay();
+        }
+
+        // Inverter Sinal (+/-)
+        function toggleSign() {
+            if (currentInput === '0' || currentInput === 'Erro') return;
+            if (currentInput.startsWith('-')) {
+                currentInput = currentInput.slice(1);
+            } else {
+                currentInput = '-' + currentInput;
+            }
+            updateDisplay();
+        }
+
+        // Apagar caractere (Backspace)
+        function handleBackspace() {
+            if (shouldResetDisplay || currentInput === 'Erro') {
+                currentInput = '0';
+                shouldResetDisplay = false;
+            } else {
+                currentInput = currentInput.slice(0, -1);
+                if (currentInput === '' || currentInput === '-') {
+                    currentInput = '0';
+                }
+            }
+            updateDisplay();
+        }
+
+        // Limpar Tudo (AC)
+        function clearAll() {
+            currentInput = '0';
+            previousInput = '';
+            operator = null;
+            shouldResetDisplay = false;
+            updateDisplay();
+        }
+
+        // Histórico de Cálculos
+        function addHistoryItem(expression, result) {
+            history.unshift({ expression, result });
+            renderHistory();
+        }
+
+        function renderHistory() {
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="text-center text-slate-500 my-auto pt-10">Nenhum histórico disponível</div>';
+                return;
+            }
+
+            historyList.innerHTML = history.map((item, index) => `
+                <div class="p-3 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all cursor-pointer text-right history-item" data-index="${index}">
+                    <div class="text-xs text-slate-400">${item.expression} =</div>
+                    <div class="text-lg font-bold text-indigo-300">${item.result}</div>
+                </div>
+            `).join('');
+
+            // Adicionar evento para reusar resultado do histórico
+            document.querySelectorAll('.history-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const idx = el.getAttribute('data-index');
+                    const item = history[idx];
+                    currentInput = item.result.replace(/\./g, '').replace(',', '.');
+                    shouldResetDisplay = false;
+                    updateDisplay();
+                    toggleHistory(false);
+                });
+            });
+        }
+
+        function toggleHistory(show) {
+            if (show === undefined) {
+                historyPanel.classList.toggle('hidden');
+            } else if (show) {
+                historyPanel.classList.remove('hidden');
+            } else {
+                historyPanel.classList.add('hidden');
+            }
+        }
+
+        toggleHistoryBtn.addEventListener('click', () => toggleHistory());
+        closeHistoryBtn.addEventListener('click', () => toggleHistory(false));
+        clearHistoryBtn.addEventListener('click', () => {
+            history = [];
+            renderHistory();
+        });
+
+        // Eventos de Clique nos Botões
+        document.querySelectorAll('button[data-number]').forEach(btn => {
+            btn.addEventListener('click', () => appendNumber(btn.dataset.number));
+        });
+
+        document.querySelectorAll('
